@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white"><br><br>
+            <h1 class="text-center">About URL Threat Assessment System</h1><br><br>
+        </div>
+        <div class="card-body">
+            <h2>What is this system?</h2><br>
+            <p>This system helps you determine if a URL is safe or dangerous. It uses advanced machine learning models and external security services to analyze URLs and provide a threat score.</p>
+            <br><br>
+            <h2>How does it work?</h2><br>
+            <p>When you submit a URL, the system performs the following steps:</p>
+            <ul><br>
+                <li><strong>Feature Extraction:</strong> The system extracts various features from the URL, such as length, number of dots, presence of special characters, and more.</li>
+                <li><strong>Machine Learning Analysis:</strong> The extracted features are analyzed using a trained machine learning model to predict the threat score.</li>
+                <li><strong>External API Checks:</strong> The URL is also checked against external security services like VirusTotal and Google Safe Browsing for additional verification.</li>
+                <li><strong>Combining Results:</strong> The results from the machine learning model and external APIs are combined to provide a final threat assessment.</li>
+            </ul>
+            <br><br>
+            <h2>Why is this important?</h2><br>
+            <p>With the increasing number of phishing and malicious websites, it's crucial to have a reliable system to check the safety of URLs. This system helps protect you from potential threats by providing accurate and timely assessments.</p>
+            <br><br>
+            <h2>Stay Safe Online</h2><br>
+            <p>Always be cautious when clicking on links, especially from unknown sources. Use this system to verify the safety of URLs and stay protected from online threats.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

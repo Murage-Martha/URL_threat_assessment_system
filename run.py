@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from app.database.db import init_db
@@ -46,7 +47,7 @@ def analyze_url():
         try:
             # Analyze the URL
             report = url_analyzer.analyze_url(url)
-            return jsonify({'analysis_id': report['details']['analysis_id']})
+            return jsonify({'analysis_id': report['analysis_id']})
         except Exception as e:
             logging.error(f"Error during URL analysis: {e}")
             return jsonify({'error': 'An error occurred during URL analysis. Please try again later.'}), 500
@@ -62,9 +63,13 @@ def report():
         threat = url_analyzer._check_threat_database(analysis_id)
         if threat:
             report = url_analyzer._display_analysis_report(threat)
-            return render_template('report.html', report=report)
+            return render_template('report.html', report=report, now=datetime.now(timezone.utc))
     logging.error("Analysis ID not found or invalid")
     return redirect(url_for('index'))
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 @app.errorhandler(404)
 def page_not_found(e):

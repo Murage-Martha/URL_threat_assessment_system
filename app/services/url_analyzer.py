@@ -3,6 +3,7 @@ from datetime import datetime
 from app.database.db import URLThreat
 from app.services.external_api import ExternalAPIService
 from app.models.ml_model import URLThreatModel
+import uuid
 
 class URLAnalyzer:
     def __init__(self, db_session, external_api_service, ml_model):
@@ -14,16 +15,27 @@ class URLAnalyzer:
         # Normalize the URL
         url = self._normalize_url(url)
 
-        # Always perform external API analysis and ML model analysis
-        external_api_results = self._query_external_apis(url)
-        ml_results = self._analyze_url_using_ml(url)
-
-        # Combine results from external APIs and ML model
+        # Query external APIs
+        external_api_results = self.external_api_service.query_external_apis(url)
+        
+        # Analyze URL using ML model
+        ml_results = self.ml_model.analyze_url(url)
+        
+        # Ensure ml_results contains 'details' key
+        if 'details' not in ml_results:
+            ml_results['details'] = {
+                'analysis_id': ml_results.get('analysis_id', str(uuid.uuid4())),
+                'threat_score': ml_results.get('threat_score', 0.0),
+                'source': ml_results.get('source', 'ML Model')
+            }
+        
+        # Combine results
         combined_results = self._combine_results(external_api_results, ml_results)
-
-        # Update the Threat Database with combined results
+        
+        # Save results to database
         self._update_threat_database(url, combined_results)
-        return self._display_analysis_report(self._check_threat_database(url))
+        
+        return combined_results
 
     def _check_threat_database(self, identifier):
         # Check if the identifier is a URL or an analysis ID
@@ -54,17 +66,24 @@ class URLAnalyzer:
     def _combine_results(self, external_api_results, ml_results):
         # Combine the results from external APIs and ML model
         combined_results = {
-            'analysis_id': ml_results['analysis_id'],
+            'analysis_id': ml_results['details']['analysis_id'],
             'threat_status': ml_results['threat_status'],
             'threat_score': ml_results['threat_score'],
             'source': ml_results['source'],
             'external_api_results': external_api_results
         }
 
-        # If external APIs indicate a threat, update the threat status and score
-        if any(api_result.get('threat_status') == 'malicious' for api_result in external_api_results.values()):
-            combined_results['threat_status'] = 'malicious'
-            combined_results['threat_score'] = max(api_result.get('threat_score', 0) for api_result in external_api_results.values())
+        # Check if 'scans' key is present in external_api_results
+        if 'virustotal' in external_api_results and 'scans' in external_api_results['virustotal']:
+            # If any external API indicates a threat, update the threat status and score
+            if any(api_result.get('detected') for api_result in external_api_results['virustotal']['scans'].values()):
+                combined_results['threat_status'] = 'malicious'
+                combined_results['threat_score'] = max(api_result.get('threat_score', 1.0) for api_result in external_api_results['virustotal']['scans'].values())
+            else:
+                # If all external APIs indicate the URL is safe, override the ML model's prediction
+                if all(not api_result.get('detected') for api_result in external_api_results['virustotal']['scans'].values()):
+                    combined_results['threat_status'] = 'safe'
+                    combined_results['threat_score'] = 0.0
 
         return combined_results
 

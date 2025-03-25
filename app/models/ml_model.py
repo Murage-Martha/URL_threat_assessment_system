@@ -1,78 +1,125 @@
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.ensemble import RandomForestClassifier
-import joblib
 import re
-from typing import List, Tuple
-from urllib.parse import urlparse
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+import joblib
+import uuid
+from scipy.sparse import hstack, csr_matrix, issparse
 
 class URLFeatureExtractor:
     def __init__(self):
-        self.vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(3, 5))
+        self.vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(3, 5), max_features=500)
+
+    def fit(self, urls: pd.Series):
+        # Convert urls to string series explicitly
+        urls = urls.astype(str)
+        self.vectorizer.fit(urls)
+
+    def transform(self, urls: pd.Series) -> csr_matrix:
+        # Convert urls to string series explicitly
+        urls = urls.astype(str)
         
-    def extract_url_features(self, url: str) -> List[float]:
-        # Extract basic features from URL
-        parsed = urlparse(url)
+        # Extract custom features
+        features = np.vstack(urls.apply(self.extract_features).values)
         
-        features = {
-            'length': len(url),
-            'num_digits': sum(c.isdigit() for c in url),
-            'num_special': len(re.findall(r'[^a-zA-Z0-9.]', url)),
-            'has_https': int(parsed.scheme == 'https'),
-            'num_dots': url.count('.'),
-            'num_subdomains': len(parsed.netloc.split('.')) - 1,
-            'path_length': len(parsed.path),
-            'has_suspicious_words': int(bool(re.search(r'login|admin|backup|update|secure|account', url.lower())))
-        }
+        # Transform URLs using TF-IDF
+        tfidf_features = self.vectorizer.transform(urls)
         
-        return list(features.values())
+        # Combine features
+        return hstack([csr_matrix(features), tfidf_features])
+
+    def extract_features(self, url: str) -> np.ndarray:
+        url = str(url)  # Ensure url is a string
+        features = []
+        features.append(len(url))  # Length of URL
+        features.append(url.count('.'))  # Number of dots
+        features.append(url.count('@'))  # Presence of '@'
+        features.append(url.count('-'))  # Presence of '-'
+        features.append(1 if 'https' in url else 0)  # Use of HTTPS
+        features.append(len(re.findall(r'\d', url)))  # Number of digits
+        features.append(len(re.findall(r'[A-Z]', url)))  # Number of uppercase letters
+        features.append(len(re.findall(r'[a-z]', url)))  # Number of lowercase letters
+        features.append(1 if re.search(r'\b(?:verify|update|login|secure|bank)\b', url, re.IGNORECASE) else 0)  # Presence of phishing keywords
+        features.append(1 if re.match(r'http://\d+\.\d+\.\d+\.\d+', url) else 0)  # Presence of IP address
+        return np.array(features)
 
 class URLThreatModel:
-    def __init__(self, model_path: str = None):
+    def __init__(self):
         self.feature_extractor = URLFeatureExtractor()
-        self.model = RandomForestClassifier() if not model_path else joblib.load(model_path)
-        self.is_trained = False if not model_path else True
-    
-    def train(self, urls: List[str], labels: List[int]):
+        self.model = RandomForestClassifier(random_state=42)
+        self.is_trained = False
+
+    def train(self, urls: pd.Series, labels: pd.Series, model: RandomForestClassifier = None):
         """Train the model with example URLs"""
-        # Extract features
-        print("Extracting features from URLs...")
-        features = []
-        for i, url in enumerate(urls):
-            if i % 1000 == 0:
-                print(f"Processed {i}/{len(urls)} URLs...")
-            features.append(self.feature_extractor.extract_url_features(url))
+        # Ensure urls and labels are converted to string and numeric
+        urls = urls.astype(str)
+        labels = pd.Series(labels).astype(int)
         
-        # Train model with limited estimators for faster results
-        print("Training Random Forest model...")
-        self.model = RandomForestClassifier(n_estimators=50, n_jobs=-1, random_state=42)
-        self.model.fit(features, labels)
+        # Fit feature extractor
+        self.feature_extractor.fit(urls)
+        
+        # Transform features
+        X = self.feature_extractor.transform(urls)
+        y = labels
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        # Use provided model or default
+        if model is not None:
+            self.model = model
+        
+        # Train model
+        self.model.fit(X_train, y_train)
+        
+        # Predict and evaluate
+        y_pred = self.model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        print(f"Model accuracy: {accuracy:.2f}")
+        
+        # Print classification report for more detailed metrics
+        print(classification_report(y_test, y_pred))
+        
         self.is_trained = True
-        
-    def predict(self, url: str) -> Tuple[str, float]:
-        """Predict if a URL is malicious"""
+
+    def predict(self, urls: pd.Series) -> np.ndarray:
+        """Predict if URLs are malicious"""
         if not self.is_trained:
             raise ValueError("Model needs to be trained or loaded first")
         
-        # Extract features
-        features = self.feature_extractor.extract_url_features(url)
+        # Ensure urls are converted to string
+        urls = urls.astype(str)
         
-        # Make prediction
-        probability = self.model.predict_proba([features])[0]
-        threat_score = probability[1]  # Probability of malicious class
-        
-        # Classify based on threat score
-        if threat_score < 0.3:
-            status = "safe"
-        elif threat_score < 0.7:
-            status = "suspicious"
-        else:
-            status = "malicious"
-            
-        return status, float(threat_score)
-    
-    def save_model(self, path: str):
-        """Save the trained model"""
+        X = self.feature_extractor.transform(urls)
+        return self.model.predict(X)
+
+    def analyze_url(self, url: str) -> dict:
+        """Analyze a single URL"""
         if not self.is_trained:
-            raise ValueError("Model needs to be trained before saving")
-        joblib.dump(self.model, path)
+            raise ValueError("Model needs to be trained or loaded first")
+        
+        # Ensure url is converted to string
+        url = str(url)
+        
+        X = self.feature_extractor.transform(pd.Series([url]))
+        prediction = self.model.predict(X)[0]
+        threat_score = self.model.predict_proba(X)[0].max()
+        
+        return {
+            'analysis_id': str(uuid.uuid4()),  # Generate a unique analysis_id
+            'threat_status': 'malicious' if prediction == 1 else 'safe',
+            'threat_score': threat_score,
+            'source': 'ML Model'
+        }
+
+    def save_model(self, path: str):
+        """Save the trained model and vectorizer"""
+        joblib.dump((self.model, self.feature_extractor.vectorizer), path)
+
+    def load_model(self, path: str):
+        """Load a trained model and vectorizer"""
+        self.model, self.feature_extractor.vectorizer = joblib.load(path)
+        self.is_trained = True

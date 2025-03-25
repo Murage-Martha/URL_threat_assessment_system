@@ -9,7 +9,8 @@ class URLThreat(Base):
     __tablename__ = 'url_threats'
     
     id = Column(Integer, primary_key=True)
-    url = Column(String, nullable=False, index=True)
+    url = Column(String, unique=True, nullable=False, index=True)
+    analysis_id = Column(String, unique=True, nullable=False)
     threat_status = Column(String, nullable=False)  # safe, suspicious, malicious
     threat_score = Column(Float)
     source = Column(String)  # database, external_api, ml_model

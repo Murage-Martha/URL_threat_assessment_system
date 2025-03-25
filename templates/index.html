@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main>
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Check URLs for Threats in Seconds!</h1>
+            <p>Find out whether a URL is malicious before clicking. We’ve got your back!</p>
+            <form id="urlForm">
+                <input type="text" id="url" name="url" placeholder="Paste URL here (No judgment if it’s a shady link, we’re here to help!)">
+                <button type="submit" class="btn scan-btn">Scan</button>
+            </form>
+        </div>
+        <div class="hero-image">
+            <div class="placeholder-img"></div>
+        </div>
+    </section>
+
+    <section id="scanning-module" class="scanning-module" style="display: none;">
+        <h2>Scanning URL…</h2>
+        <p>Checking URL blacklists, cross-referencing threat intelligence, and doing fancy cyber stuff…</p>
+        <div class="progress-bar">
+            <div class="progress" id="progress" style="width: 0%;"></div>
+        </div>
+        <div class="scanning-status">
+            <p id="status-message">We’re checking if this link is on any known watchlists.</p>
+        </div>
+    </section>
+</main>
+
+<script>
+document.getElementById('urlForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const url = document.getElementById('url').value;
+    document.getElementById('scanning-module').style.display = 'block';
+    let progress = 0;
+    const progressBar = document.getElementById('progress');
+    const statusMessage = document.getElementById('status-message');
+    let analysisComplete = false;
+    let analysisData = null;
+
+    const interval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+        if (progress === 30) {
+            statusMessage.textContent = 'Analyzing link behavior… because URLs can be sneaky.';
+        } else if (progress === 60) {
+            statusMessage.textContent = 'Running our AI’s risk assessment. It doesn’t judge, just detects threats.';
+        } else if (progress === 100) {
+            clearInterval(interval);
+            if (analysisComplete) {
+                handleAnalysisResult(analysisData);
+            }
+        }
+    }, 1000);
+
+    fetch('/analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: url })
+    })
+    .then(response => response.json())
+    .then(data => {
+        analysisComplete = true;
+        analysisData = data;
+        if (progress >= 100) {
+            handleAnalysisResult(data);
+        }
+    })
+    .catch(error => {
+        clearInterval(interval);
+        alert('An error occurred: ' + error.message);
+        document.getElementById('scanning-module').style.display = 'none';
+    });
+
+    function handleAnalysisResult(data) {
+        if (data.error) {
+            alert(data.error);
+            document.getElementById('scanning-module').style.display = 'none';
+        } else {
+            window.location.href = `/report?analysis_id=${data.analysis_id}`;
+        }
+    }
+});
+</script>
+{% endblock %}

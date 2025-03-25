@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mt-5">
+    <h1>Threat Analysis Report</h1>
+    <div id="report" class="mt-4">
+        <p><strong>URL:</strong> {{ report.url }}</p>
+        <p><strong>Status:</strong> {{ report.status }}</p>
+        <p><strong>Details:</strong></p>
+        <ul>
+            <li><strong>Analysis ID:</strong> {{ report.details.analysis_id }}</li>
+            <li><strong>Threat Score:</strong> {{ report.details.threat_score }}</li>
+            <li><strong>Source:</strong> {{ report.details.source }}</li>
+            <li><strong>External API Results:</strong> {{ report.details.external_api_results }}</li>
+        </ul>
+    </div>
+</div>
+
+<div class="text-center mt-5">
+    <h2>Threat Categories</h2>
+    <p>Phishing? Malware? Suspicious redirects? We’ll tell you exactly what’s wrong.</p>
+</div>
+{% endblock %}

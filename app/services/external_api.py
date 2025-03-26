@@ -19,14 +19,18 @@ class ExternalAPIService:
         return results
 
     def _query_virustotal(self, url):
-        # Example implementation for VirusTotal API query
-        response = requests.get(
-            f"https://www.virustotal.com/vtapi/v2/url/report?apikey={self.virustotal_api_key}&resource={url}"
-        )
-        return response.json()
+        try:
+            response = requests.get(
+                f"https://www.virustotal.com/vtapi/v2/url/report?apikey={self.virustotal_api_key}&resource={url}"
+            )
+            response.raise_for_status()
+            logging.debug(f"VirusTotal response: {response.text}")
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error querying VirusTotal: {e}")
+            return {}
 
     def _query_google_safe_browsing(self, url):
-        # Example implementation for Google Safe Browsing API query
         payload = {
             "client": {
                 "clientId": "yourcompany",
@@ -41,8 +45,14 @@ class ExternalAPIService:
                 ]
             }
         }
-        response = requests.post(
-            f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={self.google_safe_browsing_key}",
-            json=payload
-        )
-        return response.json()
+        try:
+            response = requests.post(
+                f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={self.google_safe_browsing_key}",
+                json=payload
+            )
+            response.raise_for_status()
+            logging.debug(f"Google Safe Browsing response: {response.text}")
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error querying Google Safe Browsing: {e}")
+            return {}

@@ -4,6 +4,7 @@ from app.database.db import URLThreat
 from app.services.external_api import ExternalAPIService
 from app.models.ml_model import URLThreatModel
 import uuid
+import logging
 
 class URLAnalyzer:
     def __init__(self, db_session, external_api_service, ml_model):
@@ -16,11 +17,21 @@ class URLAnalyzer:
         url = self._normalize_url(url)
 
         # Query external APIs
-        external_api_results = self.external_api_service.query_external_apis(url)
-        
+        try:
+            external_api_results = self.external_api_service.query_external_apis(url)
+            logging.debug(f"External API results: {external_api_results}")
+        except Exception as e:
+            logging.error(f"Error querying external APIs: {e}")
+            raise
+
         # Analyze URL using ML model
-        ml_results = self.ml_model.analyze_url(url)
-        
+        try:
+            ml_results = self.ml_model.analyze_url(url)
+            logging.debug(f"ML model results: {ml_results}")
+        except Exception as e:
+            logging.error(f"Error analyzing URL with ML model: {e}")
+            raise
+
         # Ensure ml_results contains 'details' key
         if 'details' not in ml_results:
             ml_results['details'] = {
@@ -28,13 +39,14 @@ class URLAnalyzer:
                 'threat_score': ml_results.get('threat_score', 0.0),
                 'source': ml_results.get('source', 'ML Model')
             }
-        
+
         # Combine results
         combined_results = self._combine_results(external_api_results, ml_results)
-        
+        logging.debug(f"Combined results: {combined_results}")
+
         # Save results to database
         self._update_threat_database(url, combined_results)
-        
+
         return combined_results
 
     def _check_threat_database(self, identifier):

@@ -40,20 +40,25 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze_url():
-    data = request.get_json()
-    url = data.get('url')
-    logging.debug(f"Received URL: {url}")
-    if url:
-        try:
-            # Analyze the URL
-            report = url_analyzer.analyze_url(url)
-            return jsonify({'analysis_id': report['analysis_id']})
-        except Exception as e:
-            logging.error(f"Error during URL analysis: {e}")
-            return jsonify({'error': 'An error occurred during URL analysis. Please try again later.'}), 500
-    else:
-        logging.error("No URL provided")
-        return jsonify({'error': 'No URL provided'}), 400
+    try:
+        data = request.get_json()
+        logging.debug(f"Request data: {data}")
+        url = data.get('url') if data else None
+        logging.debug(f"Received URL: {url}")
+        if url:
+            try:
+                # Analyze the URL
+                report = url_analyzer.analyze_url(url)
+                return jsonify({'analysis_id': report['analysis_id']})
+            except Exception as e:
+                logging.error(f"Error during URL analysis: {e}")
+                return jsonify({'error': 'An error occurred during URL analysis. Please try again later.'}), 500
+        else:
+            logging.error("No URL provided")
+            return jsonify({'error': 'No URL provided'}), 400
+    except Exception as e:
+        logging.error(f"Error parsing request data: {e}")
+        return jsonify({'error': 'Invalid request data'}), 400
 
 @app.route('/report')
 def report():

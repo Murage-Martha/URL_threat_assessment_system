@@ -115,6 +115,32 @@ class URLThreatModel:
             'source': 'ML Model'
         }
 
+    def explain_prediction(self, url: str) -> dict:
+        """Provide an explanation for the prediction of a given URL"""
+        if not self.is_trained:
+            raise ValueError("Model needs to be trained or loaded first")
+        
+        # Ensure url is converted to string
+        url = str(url)
+        
+        # Transform the URL into features
+        X = self.feature_extractor.transform(pd.Series([url]))
+        
+        # Example explanation logic (you can customize this based on your model)
+        feature_importances = self.model.feature_importances_
+        feature_names = self.feature_extractor.vectorizer.get_feature_names_out()
+        
+        # Combine feature names and importances
+        explanation = {
+            feature_names[i]: feature_importances[i]
+            for i in range(len(feature_importances))
+        }
+        
+        return {
+            'url': url,
+            'explanation': explanation
+        }
+
     def save_model(self, path: str):
         """Save the trained model and vectorizer"""
         joblib.dump((self.model, self.feature_extractor.vectorizer), path)

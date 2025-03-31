@@ -8,6 +8,7 @@ from app.models.ml_model import URLThreatModel
 from app.services.external_api import ExternalAPIService
 from app.services.url_analyzer import URLAnalyzer
 from config import Configuration
+import joblib
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -19,15 +20,16 @@ external_api_service = ExternalAPIService(
     virustotal_api_key=Configuration.VIRUSTOTAL_API_KEY,
     google_safe_browsing_key=Configuration.GOOGLE_SAFE_BROWSING_KEY
 )
-ml_model = URLThreatModel()
 
-# Load the trained model
+# Load the trained model, vectorizer, and scaler
 model_path = os.path.join('models', 'url_threat_model.joblib')
-if os.path.exists(model_path):
-    ml_model.load_model(model_path)
-    logging.info(f"Model loaded successfully from {model_path}")
-else:
-    logging.error(f"Model file not found at {model_path}. Please train the model first.")
+vectorizer_path = os.path.join('models', 'url_vectorizer.joblib')
+scaler_path = os.path.join('models', 'url_scaler.joblib')
+
+ml_model = URLThreatModel()
+ml_model.load_model(model_path)
+vectorizer = joblib.load(vectorizer_path)
+scaler = joblib.load(scaler_path)
 
 url_analyzer = URLAnalyzer(db_session, external_api_service, ml_model)
 
@@ -49,9 +51,26 @@ def analyze_url():
             try:
                 # Analyze the URL
                 report = url_analyzer.analyze_url(url)
-                return jsonify({'analysis_id': report['analysis_id']})
+                explanation = None
+                try:
+                    # Attempt to generate an explanation using the ML model
+                    explanation = ml_model.explain_prediction(url)
+                except Exception as e:
+                    logging.error(f"Error generating explanation with ML model: {e}")
+                    # Proceed without explanation if ML model fails
+
+                # Return the report and explanation (if available)
+                return jsonify({
+                    'analysis_id': report['analysis_id'],
+                    'threat_status': report['threat_status'],
+                    'threat_score': report['threat_score'],
+                    'source': report['source'],
+                    'external_api_results': report['external_api_results'],
+                    'explanation': explanation
+                })
             except Exception as e:
                 logging.error(f"Error during URL analysis: {e}")
+                # Return only external API results if ML model fails
                 return jsonify({'error': 'An error occurred during URL analysis. Please try again later.'}), 500
         else:
             logging.error("No URL provided")
@@ -68,6 +87,8 @@ def report():
         threat = url_analyzer._check_threat_database(analysis_id)
         if threat:
             report = url_analyzer._display_analysis_report(threat)
+            # Ensure external_api_results is always present
+            report['external_api_results'] = report.get('external_api_results', {})
             return render_template('report.html', report=report, now=datetime.now(timezone.utc))
     logging.error("Analysis ID not found or invalid")
     return redirect(url_for('index'))

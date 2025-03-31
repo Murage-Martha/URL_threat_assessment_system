@@ -3,30 +3,67 @@ import re
 import pandas as pd
 import numpy as np
 from dotenv import load_dotenv
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction.text import HashingVectorizer
 from app.models.ml_model import URLThreatModel
-from scipy.stats import randint
-from scipy.sparse import hstack
+from scipy.sparse import csr_matrix, hstack
 import logging
+import multiprocessing
+from sklearn.preprocessing import StandardScaler
+import joblib
 
-def extract_features(urls):
-    features = pd.DataFrame()
-    features['url_length'] = urls.apply(len)
-    features['num_special_chars'] = urls.apply(lambda x: len(re.findall(r'[-_@?%/]', x)))
-    features['has_ip'] = urls.apply(lambda x: int(bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', x))))
-    features['has_https'] = urls.apply(lambda x: int(x.startswith('https')))
-    features['domain_length'] = urls.apply(lambda x: len(re.findall(r'://([^/]+)/?', x)[0]) if re.findall(r'://([^/]+)/?', x) else 0)
-    features['num_subdomains'] = urls.apply(lambda x: len(re.findall(r'\.', re.findall(r'://([^/]+)/?', x)[0])) if re.findall(r'://([^/]+)/?', x) else 0)
-    features['num_sensitive_words'] = urls.apply(lambda x: len(re.findall(r'login|bank|secure', x)))
-    features['num_numeric_chars'] = urls.apply(lambda x: len(re.findall(r'\d', x)))
+def extract_lightweight_features(urls):
+    """
+    Extremely lightweight feature extraction with minimal computation
+    """
+    features = np.zeros((len(urls), 5), dtype=np.float32)
+    
+    for i, url in enumerate(urls):
+        features[i, 0] = len(url)  # URL length
+        features[i, 1] = sum(c in '-_@?%/' for c in url)  # Special chars
+        features[i, 2] = int('https' in url)  # HTTPS check
+        features[i, 3] = sum(c.isdigit() for c in url)  # Numeric chars
+        features[i, 4] = int(bool(re.search(r'login|bank|secure', url)))  # Sensitive words
+    
     return features
+
+def sample_data(X, y, max_samples=100000):
+    """
+    Efficiently sample data to reduce training time and memory usage
+    """
+    if X.shape[0] > max_samples:
+        # Stratified sampling
+        unique_labels = np.unique(y)
+        samples_per_class = max_samples // len(unique_labels)
+        
+        sampled_indices = []
+        for label in unique_labels:
+            label_indices = np.where(y == label)[0]
+            class_samples = np.random.choice(
+                label_indices, 
+                min(samples_per_class, len(label_indices)), 
+                replace=False
+            )
+            sampled_indices.extend(class_samples)
+        
+        # Shuffle sampled indices
+        np.random.shuffle(sampled_indices)
+        
+        return X[sampled_indices], y[sampled_indices]
+    
+    return X, y
 
 def train_model():
     load_dotenv()
-    logging.basicConfig(level=logging.DEBUG)
+    
+    # Minimal logging
+    logging.basicConfig(
+        level=logging.INFO, 
+        format='%(asctime)s - %(levelname)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
     
     logging.info("Starting URL threat model training")
     
@@ -34,78 +71,98 @@ def train_model():
     data_file = os.getenv('DATASET_PATH', 'malicious_phish.csv')
     model_dir = 'models'
     model_path = os.path.join(model_dir, 'url_threat_model.joblib')
+    vectorizer_path = os.path.join(model_dir, 'url_vectorizer.joblib')
     
     # Create model directory if it doesn't exist
     os.makedirs(model_dir, exist_ok=True)
     
-    # Load dataset
-    logging.info(f"Loading dataset from {data_file}")
     try:
-        df = pd.read_csv(data_file)
-        logging.info(f"Dataset loaded successfully with {len(df)} entries")
+        # Read dataset efficiently
+        logging.info(f"Loading dataset from {data_file}")
+        df = pd.read_csv(data_file, usecols=['url', 'label'])
         
-        # Process dataset
-        urls = df['url']
-        labels = df['label'].apply(lambda x: 0 if x.lower() in ['benign', 'safe'] else 1)
+        # Preprocess labels
+        df['label'] = df['label'].apply(lambda x: 0 if str(x).lower() in ['benign', 'safe'] else 1)
         
-        # Extract features
-        logging.info("Extracting features from URLs")
-        lexical_features = extract_features(urls)
+        logging.info(f"Total entries: {len(df)}")
         
-        # Vectorize URLs using TF-IDF
-        logging.info("Vectorizing URLs using TF-IDF")
-        vectorizer = TfidfVectorizer(analyzer='char_wb', ngram_range=(3, 5))
-        tfidf_features = vectorizer.fit_transform(urls)
+        # Extract lightweight features
+        logging.info("Extracting lightweight features")
+        lexical_features = extract_lightweight_features(df['url'].values)
         
-        # Combine features using sparse matrices
-        logging.info("Combining lexical and TF-IDF features")
-        combined_features = hstack([lexical_features, tfidf_features])
+        # Use HashingVectorizer with reduced complexity
+        logging.info("Vectorizing URLs")
+        vectorizer = HashingVectorizer(
+            analyzer='char', 
+            ngram_range=(3, 4), 
+            n_features=2000,
+            alternate_sign=False
+        )
+        url_features = vectorizer.transform(df['url'])
         
-        # Split the data into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(combined_features, labels, test_size=0.2, random_state=42)
+        # Combine features
+        logging.info("Combining features")
+        X = hstack([
+            csr_matrix(lexical_features), 
+            url_features
+        ])
+        y = df['label'].values
         
-        # Initialize model
-        ml_model = URLThreatModel()
+        # Sample data to reduce training time
+        X, y = sample_data(X, y)
         
-        # Hyperparameter tuning with randomized search
-        logging.info(f"Hyperparameter tuning with {X_train.shape[0]} URLs")
-        param_dist = {
-            'n_estimators': randint(100, 150),
-            'max_depth': [10, 20],
-            'min_samples_split': randint(2, 4),
-            'min_samples_leaf': randint(1, 2)
-        }
-        random_search = RandomizedSearchCV(RandomForestClassifier(), param_distributions=param_dist, n_iter=10, cv=3, n_jobs=-1, verbose=2, random_state=42)
-        random_search.fit(X_train, y_train)
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, 
+            test_size=0.2, 
+            random_state=42, 
+            stratify=y
+        )
         
-        # Train final model on full dataset with best hyperparameters
-        logging.info(f"Training final model with {X_train.shape[0]} URLs")
-        best_params = random_search.best_params_
-        final_model = RandomForestClassifier(**best_params)
-        ml_model.train(X_train, y_train, final_model)
+        # Scale features
+        scaler = StandardScaler(with_mean=False)
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
         
-        # Test model
-        logging.info(f"Testing model with {X_test.shape[0]} URLs")
-        y_pred = ml_model.predict(X_test)
+        # Use LogisticRegression with limited CPU usage
+        logging.info("Training model")
+        clf = LogisticRegression(
+            max_iter=300,
+            solver='saga',  # Most efficient solver for large datasets
+            n_jobs=max(1, multiprocessing.cpu_count() // 2),  # Use half the cores
+            penalty='l1',  # Sparse model
+            random_state=42
+        )
         
-        # Evaluate model
+        # Fit the model
+        clf.fit(X_train_scaled, y_train)
+        
+        # Evaluate
+        logging.info("Evaluating model")
+        y_pred = clf.predict(X_test_scaled)
+        
+        # Metrics
         accuracy = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred)
-        conf_matrix = confusion_matrix(y_test, y_pred)
         
         logging.info(f"Model accuracy: {accuracy:.2f}")
-        logging.info("Classification Report:")
-        logging.info(report)
-        logging.info("Confusion Matrix:")
-        logging.info(conf_matrix)
+        logging.info("Classification Report:\n" + report)
         
-        # Save model
+        # Save model components
+        ml_model = URLThreatModel()
+        ml_model.model = clf
         ml_model.save_model(model_path)
-        logging.info(f"Model saved successfully to {model_path}")
         
+        # Save vectorizer and scaler
+        joblib.dump(vectorizer, vectorizer_path)
+        joblib.dump(scaler, os.path.join(model_dir, 'url_scaler.joblib'))
+        
+        logging.info(f"Model saved to {model_path}")
+        logging.info(f"Vectorizer saved to {vectorizer_path}")
         return True
+    
     except Exception as e:
-        logging.error(f"Error training model: {e}")
+        logging.error(f"Training error: {e}")
         import traceback
         traceback.print_exc()
         return False

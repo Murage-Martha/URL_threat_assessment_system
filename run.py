@@ -2,17 +2,25 @@ import os
 import logging
 from datetime import datetime, timezone
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask_session import Session
 from app.database.db import init_db
 from app.models.ml_model import URLThreatModel
 from app.services.external_api import ExternalAPIService
 from app.services.url_analyzer import URLAnalyzer
 from config import Configuration
 import joblib
+from app.routes import main_bp, api_bp  # Import the blueprints
 
 load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__, template_folder='templates')
+
+# Configure Flask session
+app.config['SESSION_SECRET'] = os.getenv('SESSION_SECRET')  # Load SESSION_SECRET from .env
+app.config['SESSION_TYPE'] = 'filesystem'  # Store sessions on the filesystem
+Session(app)
+
 app.config.from_object(Configuration)  # Load configuration settings
 
 db_session = init_db(app)  # Initialize the database session with the app instance
@@ -35,6 +43,10 @@ url_analyzer = URLAnalyzer(db_session, external_api_service, ml_model)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
+
+# Register blueprints
+app.register_blueprint(main_bp)
+app.register_blueprint(api_bp, url_prefix='/api')  # Optional: Add a prefix for API routes
 
 @app.route('/')
 def index():

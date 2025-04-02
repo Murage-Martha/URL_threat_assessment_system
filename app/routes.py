@@ -87,28 +87,6 @@ def logout():
         {'WWW-Authenticate': 'Basic realm="Login Required"'}
     )
 
-
-@main_bp.route('/admin')
-def admin_panel():
-    if not session.get('logged_in'):  # Check if the user is logged in
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
-            return authenticate()  # Prompt for credentials if not authenticated
-
-        # Set session variable to indicate the user is logged in
-        session['logged_in'] = True
-
-    return render_template('admin.html')  # Render the admin panel if authenticated
-
-@main_bp.route('/logout')
-def logout():
-    """Log out the user by clearing the session and forcing re-authentication."""
-    session.clear()  # Clear the session
-    return Response(
-        'Logged out successfully.', 401,
-        {'WWW-Authenticate': 'Basic realm="Login Required"'}
-    )
-
 @api_bp.route('/analyze', methods=['POST'])
 @limiter.limit("60 per hour")
 def api_analyze():

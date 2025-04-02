@@ -1,93 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL Threat Assessment System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        .logout-container {
-            margin-top: 20px;
-            margin-right: 20px; /* Add margin to the right */
-            text-align: right; /* Align the button to the right */
-        }
-    
-        .login-btn {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    
-        .login-btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="container header-container">
-            <!-- <div class="logo">Logo</div> -->
-            <nav>
-                <ul class="nav-links">
-                    <li><a href="{{ url_for('index') }}">Home</a></li>
-                    <li><a href="{{ url_for('about') }}">About</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-    
-    <div class="container">
-        <div class="logout-container">
-            <button class="login-btn" onclick="window.location.href='/logout'">Logout</button>
-        </div>
-        <h1>Welcome to the Admin Panel</h1>
-        <p>Only authorized users can access this page.</p>
-    </div>
-    
-    <footer>
-        <div class="container footer-container">
-            <div class="footer-links">
-                <a href="/privacy">Privacy Policy</a>
-                <a href="/terms">Terms of Use</a>
-                <a href="/contact">Contact Info</a>
-            </div>
-            <div class="hidden-admin-link">
-                <a href="/admin" style="opacity: 0; font-size: 0;">Admin</a>
-            </div>
-            <div class="copyright">
-                ©Copyright 2025 – No shady links allowed.
-            </div>
-        </div>
-    </footer>
-    
-    <script>
-        let logoutTimer;
-    
-        // Reset the inactivity timer
-        function resetTimer() {
-            clearTimeout(logoutTimer);
-            logoutTimer = setTimeout(() => {
-                // Log out after 15 minutes of inactivity
-                window.location.href = "/logout";
-            }, 15 * 60 * 1000); // 15 minutes
-        }
-    
-        // Log out when the page is closed
-        window.addEventListener("beforeunload", () => {
-            navigator.sendBeacon("/logout");
-        });
-    
-        // Track user activity
-        document.addEventListener("mousemove", resetTimer);
-        document.addEventListener("keydown", resetTimer);
-    
-        // Start the timer when the page loads
-        resetTimer();
-    </script>
-</body>
-</html>
-
-
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>URL Threat Assessment System</title>
+     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+     <style>
+         .logout-container {
+             margin-top: 20px;
+             margin-right: 20px; /* Add margin to the right */
+             text-align: right; /* Align the button to the right */
+         }
+     
+         .login-btn {
+             padding: 10px 20px;
+             background-color: #007bff;
+             color: white;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+         }
+     
+         .login-btn:hover {
+             background-color: #0056b3;
+         }
+     </style>
+ </head>
+ <body>
+     <header>
+         <div class="container header-container">
+             <!-- <div class="logo">Logo</div> -->
+             <nav>
+                 <ul class="nav-links">
+                     <li><a href="{{ url_for('index') }}">Home</a></li>
+                     <li><a href="{{ url_for('about') }}">About</a></li>
+                 </ul>
+             </nav>
+         </div>
+     </header>
+     
+     <div class="container">
+         <div class="logout-container">
+             <button class="login-btn" onclick="window.location.href='/logout'">Logout</button>
+         </div>
+         <h1>Welcome to the Admin Panel</h1>
+         <p>Only authorized users can access this page.</p>
+     </div>
+     
+     <footer>
+         <div class="container footer-container">
+             <div class="footer-links">
+                 <a href="/privacy">Privacy Policy</a>
+                 <a href="/terms">Terms of Use</a>
+                 <a href="/contact">Contact Info</a>
+             </div>
+             <div class="hidden-admin-link">
+                 <a href="/admin" style="opacity: 0; font-size: 0;">Admin</a>
+             </div>
+             <div class="copyright">
+                 ©Copyright 2025 – No shady links allowed.
+             </div>
+         </div>
+     </footer>
+     
+     <script>
+         let logoutTimer;
+     
+         // Reset the inactivity timer
+         function resetTimer() {
+             clearTimeout(logoutTimer);
+             logoutTimer = setTimeout(() => {
+                 // Log out after 15 minutes of inactivity
+                 window.location.href = "/logout";
+             }, 15 * 60 * 1000); // 15 minutes
+         }
+     
+         // Log out when the page is closed
+         window.addEventListener("beforeunload", () => {
+             navigator.sendBeacon("/logout");
+         });
+     
+         // Track user activity
+         document.addEventListener("mousemove", resetTimer);
+         document.addEventListener("keydown", resetTimer);
+     
+         // Start the timer when the page loads
+         resetTimer();
+     </script>
+ </body>
+ </html>
+ 
+ 

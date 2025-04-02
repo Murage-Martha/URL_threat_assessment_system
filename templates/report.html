@@ -18,7 +18,7 @@
                             This URL is <strong>{{ "Likely Dangerous" if report.threat_score >= 0.7 else "Potentially Risky" if report.threat_score >= 0.4 else "Likely Safe" }}</strong>
                         </h3>
                         <p class="text-center mb-0">
-                            <strong>Checked:</strong> {{ report.url|truncate(50) }}
+                            <strong>Checked:</strong> {{ report.url }}
                         </p>
                         <br>
                     </div>
@@ -29,7 +29,7 @@
                         <svg class="progress-circle" width="150" height="150" viewBox="0 0 150 150">
                             <circle class="progress-circle-bg" cx="60" cy="60" r="54" stroke-width="10"></circle>
                             <circle class="progress-circle-fill {% if report.threat_score >= 0.7 %}danger{% elif report.threat_score >= 0.4 %}warning{% else %}safe{% endif %}" 
-                                    cx="60" cy="60" r="54" stroke-width="8"></circle>
+                                    cx="60" cy="60" r="54" stroke-width="12"></circle>
                         </svg>
                         <div class="progress-text">
                             <span class="progress-value {% if report.threat_score >= 0.7 %}danger{% elif report.threat_score >= 0.4 %}warning{% else %}safe{% endif %}">
@@ -46,10 +46,10 @@
                 <div class="col-12">
                     <h3 class="text-center mb-3"><i class="fas fa-flag"></i> Safety Indicators</h3>
                     <div class="d-flex flex-wrap justify-content-center">
-                        {% set vt_result = report.external_api_results.virustotal %}
-                        <div class="safety-indicator {% if vt_result.positives == 0 %}safe{% else %}danger{% endif %}">
-                            <i class="fas {% if vt_result.positives == 0 %}fa-shield-alt text-success{% else %}fa-bug text-danger{% endif %}"></i>
-                            <span>{{ vt_result.positives }} security engines detected issues</span>
+                        {% set vt_result = report.external_api_results.get('virustotal', {}) %}
+                        <div class="safety-indicator {% if vt_result.get('positives', 0) == 0 %}safe{% else %}danger{% endif %}">
+                            <i class="fas {% if vt_result.get('positives', 0) == 0 %}fa-shield-alt text-success{% else %}fa-bug text-danger{% endif %}"></i>
+                            <span>{{ vt_result.get('positives', 0) }} security engines detected issues</span>
                         </div>
                         
                         <div class="safety-indicator {% if report.external_api_results.google_safe_browsing %}danger{% else %}safe{% endif %}">
@@ -64,7 +64,7 @@
                     </div>
                 </div>
             </div>
-
+<br>
             <!-- Detailed Findings -->
             <div class="card mb-4">
                 <div class="card-header bg-light">
@@ -89,8 +89,8 @@
                     {% endif %}
                     
                     <div class="mt-3">
-                        {% if vt_result.positives > 0 %}
-                            <p><i class="fas fa-times-circle text-danger"></i> Detected by {{ vt_result.positives }} security engines</p>
+                        {% if vt_result.get('positives', 0) > 0 %}
+                            <p><i class="fas fa-times-circle text-danger"></i> Detected by {{ vt_result.get('positives', 0) }} security engines</p>
                         {% else %}
                             <p><i class="fas fa-check-circle text-success"></i> No security engines detected issues</p>
                         {% endif %}
@@ -103,11 +103,11 @@
                     </div>
                 </div>
             </div>
-<br><br>
+<br><br><br>
             <!-- Safety Guide -->
             <div class="card">
                 <div class="card-header text-white" >
-                    <h1 class="mb-0"><i class="fas fa-graduation-cap"></i> Staying Safe Online</h1>
+                    <h1 class="mb-0"><i class="fas fa-graduation-cap"></i> What should you look out for?</h1><br>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -487,6 +487,34 @@
             
             circle.style.strokeDasharray = circumference;
             circle.style.strokeDashoffset = offset;
+        });
+    });
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Animate the circular progress bar after the page has loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        const progressBars = document.querySelectorAll('.circular-progress');
+        
+        progressBars.forEach(progress => {
+            const value = parseFloat(progress.getAttribute('data-value'));
+            const circle = progress.querySelector('.progress-circle-fill');
+            const radius = circle.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference;
+
+            // Set initial state
+            circle.style.strokeDasharray = circumference;
+            circle.style.strokeDashoffset = offset;
+
+            // Animate the progress bar
+            setTimeout(() => {
+                const targetOffset = circumference - (value / 100) * circumference;
+                circle.style.transition = 'stroke-dashoffset 1.5s ease-in-out';
+                circle.style.strokeDashoffset = targetOffset;
+            }, 500); // Add a slight delay before starting the animation
         });
     });
 </script>

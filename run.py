@@ -10,11 +10,15 @@ from app.services.external_api import ExternalAPIService
 from app.services.url_analyzer import URLAnalyzer
 from config import Configuration
 import joblib
-from app.routes import main_bp, api_bp  # Import the blueprints
+
+# Import the blueprints next
+from app.routes import main_bp, api_bp 
+
 
 load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__, template_folder='templates')
+
 
 # Configure Flask session
 app.config['SESSION_SECRET'] = os.getenv('SESSION_SECRET')  # Load SESSION_SECRET from .env
@@ -39,7 +43,9 @@ ml_model.load_model(model_path)
 vectorizer = joblib.load(vectorizer_path)
 scaler = joblib.load(scaler_path)
 
+# Initialize the URLAnalyzer and attach it to the Flask app
 url_analyzer = URLAnalyzer(db_session, external_api_service, ml_model)
+app.url_analyzer = url_analyzer  # Attach the URLAnalyzer to the Flask app instance
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)

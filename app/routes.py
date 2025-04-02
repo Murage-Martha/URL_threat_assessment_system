@@ -10,6 +10,8 @@ api_bp = Blueprint('api', __name__)
 # Rate limiting decorators
 limiter = Limiter(key_func=get_remote_address)
 
+# Admin credentials section
+
 # Admin credentials (store these securely in environment variables or config)
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'password')
@@ -26,6 +28,9 @@ def authenticate():
         {'WWW-Authenticate': 'Basic realm="Login Required"'}
     )
 
+ 
+#Routing to the home page
+
 @main_bp.route('/')
 def index():
     return render_template('index.html')
@@ -33,19 +38,55 @@ def index():
 @main_bp.route('/analyze', methods=['POST'])
 @limiter.limit("10 per minute")
 def analyze():
-    url = request.form.get('url')
+    # Check for URL in form data or JSON payload
+    url = request.form.get('url') or (request.json and request.json.get('url'))
     
     if not url:
-        return jsonify({'error': 'No URL provided'}), 400
+        if request.is_json:
+            return jsonify({'error': 'No URL provided'}), 400
+        return render_template('error.html', error_message='No URL provided'), 400
     
     if not validators.url(url):
-        return jsonify({'error': 'Invalid URL format'}), 400
+        if request.is_json:
+            return jsonify({'error': 'Invalid URL format'}), 400
+        return render_template('error.html', error_message='Invalid URL format'), 400
     
     try:
         report = current_app.url_analyzer.analyze_url(url)
+        
+        # Return JSON if the request is from fetch or expects JSON
+        if request.is_json or request.headers.get('Accept') == 'application/json':
+            return jsonify(report)
+        
+        # Otherwise, render the HTML template
         return render_template('report.html', report=report)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        if request.is_json:
+            return jsonify({'error': str(e)}), 500
+        return render_template('error.html', error_message=str(e)), 500
+
+# Routing to the admin page
+@main_bp.route('/admin')
+def admin_panel():
+    if not session.get('logged_in'):  # Check if the user is logged in
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()  # Prompt for credentials if not authenticated
+
+        # Set session variable to indicate the user is logged in
+        session['logged_in'] = True
+
+    return render_template('admin.html')  # Render the admin panel if authenticated
+
+@main_bp.route('/logout')
+def logout():
+    """Log out the user by clearing the session and forcing re-authentication."""
+    session.clear()  # Clear the session
+    return Response(
+        'Logged out successfully.', 401,
+        {'WWW-Authenticate': 'Basic realm="Login Required"'}
+    )
+
 
 @main_bp.route('/admin')
 def admin_panel():

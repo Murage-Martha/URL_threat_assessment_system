@@ -1,12 +1,151 @@
 <!DOCTYPE html>
- <html lang="en">
- <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>URL Threat Assessment System</title>
-     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-     <style>
-         .logout-container {
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - URL Threat Assessment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .nav-links a:hover {
+            color: #6c63ff;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0;
+            color: #333;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            margin: 15px 0;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .card p {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .card .icon {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            background-color: #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 12px;
+            margin-top: 15px;
+        }
+
+        .progress-bar .progress {
+            height: 100%;
+            background-color: #6c63ff;
+            border-radius: 8px;
+        }
+
+        .charts {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-row {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        @media (min-width: 992px) {
+            .chart-row {
+                flex-direction: row;
+            }
+            .chart-row .chart-container {
+                flex: 1;
+            }
+        }
+
+        .chart-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-container h3 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px 0;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+
+        /* Animation for counting numbers */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .counting {
+            animation: countUp 0.8s ease-out;
+        }
+
+        .logout-container {
              margin-top: 20px;
              margin-right: 20px; /* Add margin to the right */
              text-align: right; /* Align the button to the right */
@@ -24,70 +163,258 @@
          .login-btn:hover {
              background-color: #0056b3;
          }
-     </style>
- </head>
- <body>
-     <header>
-         <div class="container header-container">
-             <!-- <div class="logo">Logo</div> -->
-             <nav>
-                 <ul class="nav-links">
-                     <li><a href="{{ url_for('index') }}">Home</a></li>
-                     <li><a href="{{ url_for('about') }}">About</a></li>
-                 </ul>
-             </nav>
-         </div>
-     </header>
-     
-     <div class="container">
-         <div class="logout-container">
-             <button class="login-btn" onclick="window.location.href='/logout'">Logout</button>
-         </div>
-         <h1>Welcome to the Admin Panel</h1>
-         <p>Only authorized users can access this page.</p>
-     </div>
-     
-     <footer>
-         <div class="container footer-container">
-             <div class="footer-links">
-                 <a href="/privacy">Privacy Policy</a>
-                 <a href="/terms">Terms of Use</a>
-                 <a href="/contact">Contact Info</a>
-             </div>
-             <div class="hidden-admin-link">
-                 <a href="/admin" style="opacity: 0; font-size: 0;">Admin</a>
-             </div>
-             <div class="copyright">
-                 ©Copyright 2025 – No shady links allowed.
-             </div>
-         </div>
-     </footer>
-     
-     <script>
-         let logoutTimer;
-     
-         // Reset the inactivity timer
-         function resetTimer() {
-             clearTimeout(logoutTimer);
-             logoutTimer = setTimeout(() => {
-                 // Log out after 15 minutes of inactivity
-                 window.location.href = "/logout";
-             }, 15 * 60 * 1000); // 15 minutes
-         }
-     
-         // Log out when the page is closed
-         window.addEventListener("beforeunload", () => {
-             navigator.sendBeacon("/logout");
-         });
-     
-         // Track user activity
-         document.addEventListener("mousemove", resetTimer);
-         document.addEventListener("keydown", resetTimer);
-     
-         // Start the timer when the page loads
-         resetTimer();
-     </script>
- </body>
- </html>
- 
- 
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <div>
+                <h1 class="logoHeading">Linkenstein</h1>
+                <p class="slogan">‘Trust Me Bro’ Isn’t a Security Protocol.</p>    
+            </div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('about') }}">About</a></li>
+                    <li><a href="/admin" style="color: #6c63ff; font-weight: 600;">Admin</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="logout-container">
+            <button class="login-btn" onclick="window.location.href='/logout'">Logout</button>
+        </div>
+        <h1>Welcome to the Admin Panel</h1>
+        <p>Only authorized users can access this page.</p>
+    </div>
+
+    <div class="container">
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="card" style="border-top: 4px solid #4285f4;">
+                <div class="icon" style="color: #4285f4;">🔍</div>
+                <h3>Total URLs Analyzed</h3>
+                <p id="total-urls" class="counting">0</p>
+            </div>
+            <div class="card" style="border-top: 4px solid #ea4335;">
+                <div class="icon" style="color: #ea4335;">⚠️</div>
+                <h3>Malicious URLs Detected</h3>
+                <p id="total-malicious" class="counting">0</p>
+            </div>
+            <div class="card" style="border-top: 4px solid #34a853;">
+                <div class="icon" style="color: #34a853;">🛡️</div>
+                <h3>Threat Detection Rate</h3>
+                <canvas id="detection-rate-chart" width="50" height="50"></canvas>
+            </div>
+            <div class="card" style="border-top: 4px solid #6c63ff;">
+                <div class="icon" style="color: #6c63ff;">🔒</div>
+                <h3>HTTPS Adoption</h3>
+                <div class="progress-bar">
+                    <div id="https-progress" class="progress" style="width: 0%;"></div>
+                </div>
+                <p id="https-percentage">0%</p>
+            </div>
+            <div class="card" style="border-top: 4px solid #00bcd4;">
+                <div class="icon" style="color: #00bcd4;">✳️</div>
+                <h3>Special Character Usage</h3>
+                <p id="special-char-usage" class="counting">0%</p>
+            </div>
+        </div>
+
+        <!-- Threat Analytics -->
+        <div class="charts">
+            <div class="chart-row">
+                <div class="chart-container">
+                    <h3>Threat Analytics</h3>
+                    <canvas id="threat-bar-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Threat Distribution</h3>
+                    <canvas id="threat-pie-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Trends -->
+        <div class="chart-container">
+            <h3>Daily Trends</h3>
+            <canvas id="daily-trends-chart"></canvas>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container footer-container">
+            <div class="footer-links">
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms of Use</a>
+                <a href="/contact">Contact Info</a>
+            </div>
+            <div class="hidden-admin-link">
+                <a href="/admin" style="opacity: 0; font-size: 0;">Admin</a>
+            </div>
+            <div class="copyright">
+                ©Copyright 2025 – No shady links allowed.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let logoutTimer;
+        
+        // Reset the inactivity timer
+        function resetTimer() {
+            clearTimeout(logoutTimer);
+            logoutTimer = setTimeout(() => {
+                // Log out after 15 minutes of inactivity
+                window.location.href = "/logout";
+            }, 15 * 60 * 1000); // 15 minutes
+        }
+    
+        // Log out when the page is closed
+        window.addEventListener("beforeunload", () => {
+            navigator.sendBeacon("/logout");
+        });
+    
+        // Track user activity
+        document.addEventListener("mousemove", resetTimer);
+        document.addEventListener("keydown", resetTimer);
+    
+        // Start the timer when the page loads
+        resetTimer();
+
+        async function fetchStats() {
+            try {
+                const response = await fetch('/admin/stats');
+                const stats = await response.json();
+
+                // Update summary cards with counting animation
+                function animateValue(id, target) {
+                    const element = document.getElementById(id);
+                    const duration = 1000;
+                    const start = 0;
+                    const increment = target / (duration / 16);
+                    let current = start;
+                    
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            clearInterval(timer);
+                            current = target;
+                        }
+                        if (id.includes('percentage')) {
+                            element.textContent = Math.round(current) + '%';
+                        } else {
+                            element.textContent = Math.round(current);
+                        }
+                    }, 16);
+                }
+
+                animateValue('total-urls', stats.total_urls);
+                animateValue('total-malicious', stats.total_malicious);
+                animateValue('special-char-usage', stats.special_char_percentage);
+
+                // Update HTTPS progress bar
+                const httpsProgress = document.getElementById('https-progress');
+                const httpsPercentage = document.getElementById('https-percentage');
+                httpsProgress.style.width = stats.https_adoption + '%';
+                httpsPercentage.textContent = stats.https_adoption + '%';
+
+                // Render Threat Detection Rate donut chart
+                new Chart(document.getElementById('detection-rate-chart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Threats Detected', 'Safe'],
+                        datasets: [{
+                            data: [stats.detection_rate, 100 - stats.detection_rate],
+                            backgroundColor: ['#34a853', '#e9ecef']
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+
+                // Render Threat Analytics bar chart
+                new Chart(document.getElementById('threat-bar-chart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Malicious', 'Clean'],
+                        datasets: [{
+                            label: 'URLs',
+                            data: [stats.total_malicious, stats.total_urls - stats.total_malicious],
+                            backgroundColor: ['#ea4335', '#34a853']
+                        }]
+                    },
+                    options: { 
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                // Render Threat Distribution pie chart
+                new Chart(document.getElementById('threat-pie-chart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Phishing', 'Malware', 'Other'],
+                        datasets: [{
+                            data: [1, 0, 0], // Example data
+                            backgroundColor: ['#ea4335', '#fbbc05', '#9c27b0']
+                        }]
+                    },
+                    options: { 
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+
+                // Render Daily Trends line chart
+                const dailyLabels = stats.urls_per_day.map(item => item.date);
+                const dailyData = stats.urls_per_day.map(item => item.count);
+                new Chart(document.getElementById('daily-trends-chart'), {
+                    type: 'line',
+                    data: {
+                        labels: dailyLabels,
+                        datasets: [{
+                            label: 'URLs Analyzed Per Day',
+                            data: dailyData,
+                            borderColor: '#4285f4',
+                            backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: { 
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Fetch stats on page load
+        document.addEventListener('DOMContentLoaded', fetchStats);
+    </script>
+</body>
+</html>

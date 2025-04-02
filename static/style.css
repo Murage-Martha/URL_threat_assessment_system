@@ -37,6 +37,20 @@ header {
     color: #007bff;
 }
 
+.logoHeading{
+    font-size: 3rem;
+    font-weight:80;
+    color: #007bff;
+    font-family: 'Brush Script MT', cursive;
+}
+
+.slogan {
+    font-size: 1rem;
+    color: #555;
+    margin-top: 5px;
+    font-family: 'Arial', cursive;
+}
+
 .nav-links {
     display: flex;
     justify-content: center;

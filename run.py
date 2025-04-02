@@ -28,6 +28,8 @@ Session(app)
 app.config.from_object(Configuration)  # Load configuration settings
 
 db_session = init_db(app)  # Initialize the database session with the app instance
+app.config['DB_SESSION'] = db_session  # Attach db_session to app config
+
 external_api_service = ExternalAPIService(
     virustotal_api_key=Configuration.VIRUSTOTAL_API_KEY,
     google_safe_browsing_key=Configuration.GOOGLE_SAFE_BROWSING_KEY

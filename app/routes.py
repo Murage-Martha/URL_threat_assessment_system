@@ -3,6 +3,10 @@ from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
 import validators
 import os
+from datetime import datetime, timedelta
+from sqlalchemy import func
+from app.database.db import URLThreat
+import logging  # Add this import
 
 main_bp = Blueprint('main', __name__)
 api_bp = Blueprint('api', __name__)
@@ -86,6 +90,56 @@ def logout():
         'Logged out successfully.', 401,
         {'WWW-Authenticate': 'Basic realm="Login Required"'}
     )
+
+@main_bp.route('/admin/stats')
+def admin_stats():
+    """Generate system statistics for the admin dashboard."""
+    try:
+        # Access db_session from app config
+        db_session = current_app.config['DB_SESSION']
+
+        # Total URLs analyzed
+        total_urls = db_session.query(func.count(URLThreat.id)).scalar()
+
+        # Total malicious URLs detected
+        total_malicious = db_session.query(func.count(URLThreat.id)).filter(URLThreat.threat_status == 'malicious').scalar()
+
+        # Threat detection rate
+        detection_rate = (total_malicious / total_urls * 100) if total_urls > 0 else 0
+
+        # URLs analyzed per day (last 7 days)
+        last_7_days = datetime.utcnow() - timedelta(days=7)
+        urls_per_day = (
+            db_session.query(func.date(URLThreat.last_checked), func.count(URLThreat.id))
+            .filter(URLThreat.last_checked >= last_7_days)
+            .group_by(func.date(URLThreat.last_checked))
+            .all()
+        )
+        # Convert to JSON-serializable format
+        urls_per_day = [{'date': str(row[0]), 'count': row[1]} for row in urls_per_day]
+
+        # HTTPS adoption
+        https_count = db_session.query(func.count(URLThreat.id)).filter(URLThreat.url.like('https://%')).scalar()
+        https_adoption = (https_count / total_urls * 100) if total_urls > 0 else 0
+
+        # Special character usage
+        special_char_count = db_session.query(func.count(URLThreat.id)).filter(URLThreat.url.op('regexp')('[-_@?%/]')).scalar()
+        special_char_percentage = (special_char_count / total_urls * 100) if total_urls > 0 else 0
+
+        # Prepare statistics
+        stats = {
+            'total_urls': total_urls,
+            'total_malicious': total_malicious,
+            'detection_rate': round(detection_rate, 2),
+            'urls_per_day': urls_per_day,
+            'https_adoption': round(https_adoption, 2),
+            'special_char_percentage': round(special_char_percentage, 2),
+        }
+
+        return jsonify(stats)
+    except Exception as e:
+        logging.error(f"Error generating admin stats: {e}")
+        return jsonify({'error': 'Failed to generate statistics'}), 500
 
 @api_bp.route('/analyze', methods=['POST'])
 @limiter.limit("60 per hour")

@@ -10,8 +10,10 @@ from app.services.external_api import ExternalAPIService
 from app.services.url_analyzer import URLAnalyzer
 from config import Configuration
 import joblib
+
 # Import the blueprints next
 from app.routes import main_bp, api_bp 
+
 
 load_dotenv()  # Load environment variables from .env file
 

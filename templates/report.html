@@ -26,8 +26,8 @@
                 
                 <div class="col-md-4 d-flex align-items-center justify-content-center">
                     <div class="circular-progress" data-value="{{ report.threat_score * 100 }}">
-                        <svg class="progress-circle" width="120" height="120" viewBox="0 0 120 120">
-                            <circle class="progress-circle-bg" cx="60" cy="60" r="54" stroke-width="8"></circle>
+                        <svg class="progress-circle" width="150" height="150" viewBox="0 0 150 150">
+                            <circle class="progress-circle-bg" cx="60" cy="60" r="54" stroke-width="10"></circle>
                             <circle class="progress-circle-fill {% if report.threat_score >= 0.7 %}danger{% elif report.threat_score >= 0.4 %}warning{% else %}safe{% endif %}" 
                                     cx="60" cy="60" r="54" stroke-width="12"></circle>
                         </svg>

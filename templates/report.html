@@ -59,7 +59,7 @@
                         
                         <div class="safety-indicator {% if 'https://' in report.url.lower() %}safe{% else %}danger{% endif %}">
                             <i class="fas {% if 'https://' in report.url.lower() %}fa-lock text-success{% else %}fa-unlock text-danger{% endif %}"></i>
-                            <span>{% if 'https://' in report.url.lower() %}Secure connection{% else %}Not secure{% endif %}</span>
+                            <span>{% if 'https://' in report.url.lower() %}Secure connection{% else %}Not https secure{% endif %}</span>
                         </div>
                     </div>
                 </div>

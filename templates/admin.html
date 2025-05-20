@@ -237,10 +237,10 @@
             </div>
         </div>
 
-        <!-- Daily Trends -->
+        <!-- Weekly Trends -->
         <div class="chart-container">
-            <h3>Daily Trends</h3>
-            <canvas id="daily-trends-chart"></canvas>
+            <h3 id="weekly-trends-title"></h3>
+            <canvas id="weekly-trends-chart"></canvas>
         </div>
     </div>
 
@@ -284,136 +284,171 @@
         // Start the timer when the page loads
         resetTimer();
 
+        function isValidNumber(n) {
+            return typeof n === 'number' && !isNaN(n) && isFinite(n);
+        }
+
         async function fetchStats() {
             try {
                 const response = await fetch('/admin/stats');
                 const stats = await response.json();
 
-                // Update summary cards with counting animation
-                function animateValue(id, target) {
-                    const element = document.getElementById(id);
-                    const duration = 1000;
-                    const start = 0;
-                    const increment = target / (duration / 16);
-                    let current = start;
-                    
-                    const timer = setInterval(() => {
-                        current += increment;
-                        if (current >= target) {
-                            clearInterval(timer);
-                            current = target;
+                // Only update if stats are valid
+                if (
+                    isValidNumber(stats.total_urls) &&
+                    isValidNumber(stats.total_malicious) &&
+                    isValidNumber(stats.special_char_percentage) &&
+                    isValidNumber(stats.https_adoption) &&
+                    isValidNumber(stats.detection_rate)
+                ) {
+                    // Animate values
+                    animateValue('total-urls', stats.total_urls);
+                    animateValue('total-malicious', stats.total_malicious);
+                    animateValue('special-char-usage', stats.special_char_percentage);
+
+                    // Update HTTPS progress bar
+                    const httpsProgress = document.getElementById('https-progress');
+                    const httpsPercentage = document.getElementById('https-percentage');
+                    httpsProgress.style.width = stats.https_adoption + '%';
+                    httpsPercentage.textContent = stats.https_adoption + '%';
+
+                    // Render charts (same as before)
+                    new Chart(document.getElementById('detection-rate-chart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Threats Detected', 'Safe'],
+                            datasets: [{
+                                data: [stats.detection_rate, 100 - stats.detection_rate],
+                                backgroundColor: ['#34a853', '#e9ecef']
+                            }]
+                        },
+                        options: { 
+                            responsive: true, 
+                            cutout: '70%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
                         }
-                        if (id.includes('percentage')) {
-                            element.textContent = Math.round(current) + '%';
-                        } else {
-                            element.textContent = Math.round(current);
+                    });
+
+                    // Render Threat Analytics bar chart
+                    new Chart(document.getElementById('threat-bar-chart'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Malicious', 'Clean'],
+                            datasets: [{
+                                label: 'URLs',
+                                data: [stats.total_malicious, stats.total_urls - stats.total_malicious],
+                                backgroundColor: ['#ea4335', '#34a853']
+                            }]
+                        },
+                        options: { 
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
                         }
-                    }, 16);
+                    });
+
+                    // Render Threat Distribution pie chart
+                    new Chart(document.getElementById('threat-pie-chart'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['Phishing', 'Malware', 'Other'],
+                            datasets: [{
+                                data: [1, 0, 0], // Example data
+                                backgroundColor: ['#ea4335', '#fbbc05', '#9c27b0']
+                            }]
+                        },
+                        options: { 
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+
+                    // Render Weekly Trends bar chart
+                    const weeklyLabels = stats.urls_per_week.map(item => item.week);
+                    const weeklyData = stats.urls_per_week.map(item => item.count);
+                    const year = stats.latest_year || new Date().getFullYear();
+                    document.getElementById('weekly-trends-title').textContent = year + " Weekly Trends";
+                    new Chart(document.getElementById('weekly-trends-chart'), {
+                        type: 'bar',
+                        data: {
+                            labels: weeklyLabels,
+                            datasets: [{
+                                label: 'Total URLs Analyzed',
+                                data: weeklyData,
+                                backgroundColor: '#4285f4'
+                            }]
+                        },
+                        options: { 
+                            responsive: true,
+                            scales: {
+                                x: {
+                                    title: { display: true, text: 'Week' }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    min: 0,
+                                    max: 100,
+                                    title: { display: true, text: 'URLs Analyzed' },
+                                    ticks: {
+                                        stepSize: 10,
+                                        callback: function(value) { return value; }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    // Show loading or error state
+                    document.getElementById('total-urls').textContent = '...';
+                    document.getElementById('total-malicious').textContent = '...';
+                    document.getElementById('special-char-usage').textContent = '...';
+                    document.getElementById('https-percentage').textContent = '...';
                 }
-
-                animateValue('total-urls', stats.total_urls);
-                animateValue('total-malicious', stats.total_malicious);
-                animateValue('special-char-usage', stats.special_char_percentage);
-
-                // Update HTTPS progress bar
-                const httpsProgress = document.getElementById('https-progress');
-                const httpsPercentage = document.getElementById('https-percentage');
-                httpsProgress.style.width = stats.https_adoption + '%';
-                httpsPercentage.textContent = stats.https_adoption + '%';
-
-                // Render Threat Detection Rate donut chart
-                new Chart(document.getElementById('detection-rate-chart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Threats Detected', 'Safe'],
-                        datasets: [{
-                            data: [stats.detection_rate, 100 - stats.detection_rate],
-                            backgroundColor: ['#34a853', '#e9ecef']
-                        }]
-                    },
-                    options: { 
-                        responsive: true, 
-                        cutout: '70%',
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-
-                // Render Threat Analytics bar chart
-                new Chart(document.getElementById('threat-bar-chart'), {
-                    type: 'bar',
-                    data: {
-                        labels: ['Malicious', 'Clean'],
-                        datasets: [{
-                            label: 'URLs',
-                            data: [stats.total_malicious, stats.total_urls - stats.total_malicious],
-                            backgroundColor: ['#ea4335', '#34a853']
-                        }]
-                    },
-                    options: { 
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-
-                // Render Threat Distribution pie chart
-                new Chart(document.getElementById('threat-pie-chart'), {
-                    type: 'pie',
-                    data: {
-                        labels: ['Phishing', 'Malware', 'Other'],
-                        datasets: [{
-                            data: [1, 0, 0], // Example data
-                            backgroundColor: ['#ea4335', '#fbbc05', '#9c27b0']
-                        }]
-                    },
-                    options: { 
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-
-                // Render Daily Trends line chart
-                const dailyLabels = stats.urls_per_day.map(item => item.date);
-                const dailyData = stats.urls_per_day.map(item => item.count);
-                new Chart(document.getElementById('daily-trends-chart'), {
-                    type: 'line',
-                    data: {
-                        labels: dailyLabels,
-                        datasets: [{
-                            label: 'URLs Analyzed Per Day',
-                            data: dailyData,
-                            borderColor: '#4285f4',
-                            backgroundColor: 'rgba(66, 133, 244, 0.1)',
-                            fill: true,
-                            tension: 0.3
-                        }]
-                    },
-                    options: { 
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
             } catch (error) {
+                // Show error state
+                document.getElementById('total-urls').textContent = 'Error';
+                document.getElementById('total-malicious').textContent = 'Error';
+                document.getElementById('special-char-usage').textContent = 'Error';
+                document.getElementById('https-percentage').textContent = 'Error';
                 console.error('Error fetching stats:', error);
             }
         }
 
-        // Fetch stats on page load
+        function animateValue(id, target) {
+            const element = document.getElementById(id);
+            if (!isValidNumber(target)) {
+                element.textContent = '...';
+                return;
+            }
+            const duration = 1000;
+            const start = 0;
+            const increment = target / (duration / 16);
+            let current = start;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    clearInterval(timer);
+                    current = target;
+                }
+                if (id.includes('percentage')) {
+                    element.textContent = Math.round(current) + '%';
+                } else {
+                    element.textContent = Math.round(current);
+                }
+            }, 16);
+        }
+
         document.addEventListener('DOMContentLoaded', fetchStats);
     </script>
 </body>

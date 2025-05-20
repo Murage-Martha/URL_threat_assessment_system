@@ -91,6 +91,14 @@ def logout():
         {'WWW-Authenticate': 'Basic realm="Login Required"'}
     )
 
+from datetime import datetime, timedelta
+
+def get_week_range(year, week):
+    # ISO weeks: Monday is the first day of the week
+    first_day = datetime.strptime(f'{year}-W{int(week )}-1', "%Y-W%W-%w")
+    last_day = first_day + timedelta(days=6)
+    return f"{first_day.strftime('%b %d')} - {last_day.strftime('%b %d')}"
+
 @main_bp.route('/admin/stats')
 def admin_stats():
     """Generate system statistics for the admin dashboard."""
@@ -118,6 +126,39 @@ def admin_stats():
         # Convert to JSON-serializable format
         urls_per_day = [{'date': str(row[0]), 'count': row[1]} for row in urls_per_day]
 
+        # URLs analyzed per week (last 8 weeks)
+        last_8_weeks = datetime.utcnow() - timedelta(weeks=8)
+        urls_per_week = (
+            db_session.query(
+                func.strftime('%Y-%W', URLThreat.last_checked).label('week'),
+                func.count(URLThreat.id)
+            )
+            .filter(URLThreat.last_checked >= last_8_weeks)
+            .group_by('week')
+            .order_by('week')
+            .all()
+        )
+        # Convert to JSON-serializable format
+        urls_per_week = [{'week': row[0], 'count': row[1]} for row in urls_per_week]
+
+        # Group by year and week
+        weekly = (
+            db_session.query(
+                func.extract('year', URLThreat.last_checked).label('year'),
+                func.extract('week', URLThreat.last_checked).label('week'),
+                func.count(URLThreat.id)
+            )
+            .group_by('year', 'week')
+            .order_by('year', 'week')
+            .all()
+        )
+        # Format for frontend
+        urls_per_week = []
+        for row in weekly:
+            year, week, count = int(row[0]), int(row[1]), row[2]
+            week_label = get_week_range(year, week)
+            urls_per_week.append({'week': week_label, 'year': year, 'count': count})
+
         # HTTPS adoption
         https_count = db_session.query(func.count(URLThreat.id)).filter(URLThreat.url.like('https://%')).scalar()
         https_adoption = (https_count / total_urls * 100) if total_urls > 0 else 0
@@ -132,8 +173,10 @@ def admin_stats():
             'total_malicious': total_malicious,
             'detection_rate': round(detection_rate, 2),
             'urls_per_day': urls_per_day,
+            'urls_per_week': urls_per_week,
             'https_adoption': round(https_adoption, 2),
             'special_char_percentage': round(special_char_percentage, 2),
+            'latest_year': urls_per_week[-1]['year'] if urls_per_week else datetime.utcnow().year,
         }
 
         return jsonify(stats)

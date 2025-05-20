@@ -171,49 +171,89 @@ input[type="text"]:focus {
 
 /* How it works section */
 .how-it-works {
-    background-color: #f0f4ff;
-    padding: 40px;
-    border-radius: 8px;
-    margin-bottom: 60px;
-    text-align: center;
+    padding: 2rem;
+    background-color: #edf0ff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
 }
 
-.how-it-works h2 {
-    margin-bottom: 30px;
-    color: #0056b3;
+.how-it-works h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 1.5rem;
 }
 
 .steps {
     display: flex;
     justify-content: space-around;
+    align-items: center;
+    text-align: center;
 }
 
 .step {
-    text-align: center;
-    width: 30%;
-}
-
-.step-icon {
     background-color: #fff;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    margin: 0 auto 15px;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Added transition for box-shadow */
+    width: 200px; /* Adjust as needed */
+    height: 200px; /* Adjust as needed */
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.step:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Increased box-shadow on hover */
+}
+
+.step h2 {
+    color: #2c3e50;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .step p {
-    font-weight: 600;
-    margin-bottom: 8px;
+    font-size: 1em;
+    line-height: 1.4;
+    color: #555;
 }
 
-.step-description {
-    font-weight: normal !important;
-    font-size: 0.95rem;
-    color: #555;
+.step-icon {
+    font-size: 3em;
+    color: #3498db; /* Adjust color as needed */
+    margin-bottom: 0.5rem;
+}
+
+/* Add animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.step:nth-child(1) {
+    animation-delay: 0.2s;
+}
+
+.step:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.step:nth-child(3) {
+    animation-delay: 0.6s;
 }
 
 /* Threat categories section */

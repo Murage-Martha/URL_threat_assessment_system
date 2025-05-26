@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URL Threat Assessment System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700&family=Wendy+One&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <div class="container header-container">
-            <div>
-                <h1 class="logoHeading">Linkenstein</h1>
-                <p class="slogan">‘Trust Me Bro’ Isn’t a Security Protocol.</p>    
+    <header class="main-header">
+        <div class="container">
+            <div class="logo-area">
+                <span class="logo-icon" href="../images/image.png"></span>
+                <span class="logoHeading">Linkenstein</span>
             </div>
             <nav>
                 <ul class="nav-links">
@@ -19,29 +20,75 @@
                     <li><a href="{{ url_for('about') }}">About</a></li>
                 </ul>
             </nav>
+            <a href="{{ url_for('index') }}#scan-section" class="get-started-btn">Get Started</a>
         </div>
     </header>
     
-    <div class="container">
+    
         {% block content %}{% endblock %}
-    </div>
+    
     
     <footer>
-        <div class="container footer-container">
-            <div class="footer-links">
-                <a href="/privacy">Privacy Policy</a>
-                <a href="/terms">Terms of Use</a>
-                <a href="/contact">Contact Info</a>
+        <div class="footer-new">
+            <!-- Card 1: Logo, slogan, social icons -->
+            <div class="footer-card">
+                <div class="logo-area" style="margin-bottom: 0.5rem;">
+                    <span class="logo-icon"></span>
+                    <span class="logoHeading" style="font-size:1.6rem;font-family:'Urbanist',sans-serif;font-weight:700;color:#6c63ff;">Linkenstein</span>
+                </div>
+                <div class="footer-slogan">Securing the web, one link at a time. </div>
+                <a href="{{ url_for('index') }}" class="footer-nav-link">Home</a>
+                <a href="{{ url_for('about') }}" class="footer-nav-link">About us</a>
+                                <div class="footer-slogan"><span>©Copyright 2025 – No shady links allowed.</span></div>
             </div>
-            <div class="hidden-admin-link">
-                <a href="/admin" style="opacity: 0; font-size: 0;">Admin</a>
-            </div>
-            <div class="copyright">
-                ©Copyright 2025 – No shady links allowed.
+            <!-- Card 2: Newsletter -->
+            <div class="footer-card footer-newsletter-card">
+                <div class="footer-newsletter-title">Newsletter</div>
+                <div class="footer-newsletter-subtitle">Subscribe for monthly updates</div>
+                <form id="newsletter-form" class="footer-newsletter-form" method="POST" action="/subscribe">
+                    <label for="newsletter-email" class="footer-newsletter-label">E-mail Address</label>
+                    <input type="email" id="newsletter-email" name="email" placeholder="Enter your Email" required>
+                    <button type="submit" class="footer-newsletter-btn">Subscribe</button>
+                    <div id="newsletter-message" class="footer-newsletter-message"></div>
+                </form>
             </div>
         </div>
     </footer>
     
-    {% block scripts %}{% endblock %}
+    {% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('newsletter-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('newsletter-email').value;
+            const messageDiv = document.getElementById('newsletter-message');
+            messageDiv.textContent = '';
+            fetch('/subscribe', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: email})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.style.color = '#6c63ff';
+                    messageDiv.textContent = data.message;
+                    form.reset();
+                } else {
+                    messageDiv.style.color = '#ff5e5e';
+                    messageDiv.textContent = data.message;
+                }
+            })
+            .catch(() => {
+                messageDiv.style.color = '#ff5e5e';
+                messageDiv.textContent = 'Something went wrong. Please try again.';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
 </body>
 </html>

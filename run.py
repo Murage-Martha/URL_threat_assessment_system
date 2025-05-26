@@ -117,6 +117,17 @@ def report():
 def about():
     return render_template('about.html')
 
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    data = request.get_json()
+    email = data.get('email')
+    # Here you would add logic to save the email to your database or mailing list provider
+    # For demo, just return success if email looks valid
+    if email and '@' in email:
+        # TODO: Save email to database or mailing list
+        return jsonify({'success': True, 'message': 'Subscribed successfully!'})
+    return jsonify({'success': False, 'message': 'Please enter a valid email address.'}), 400
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', error_message="Page not found"), 404

@@ -3,23 +3,22 @@
 {% block content %}
 <div class="container mt-4">
     <div class="card shadow" style="border-radius: 15px;">
-        <br><br>
+        <br>
         <div class="card-header text-white">
             <h1 class="text-center mb-0">URL Safety Report</h1>
         </div>
-        <br>
         <div class="card-body">
             <!-- Safety Summary Section -->
             <div class="row mb-4">
                 <div class="col-md-8">
                     <div class="alert {% if report.threat_score >= 0.7 %}alert-danger{% elif report.threat_score >= 0.4 %}alert-warning{% else %}alert-success{% endif %}">
-                        <h3 class="text-center mb-3">
-                            <i class="fas {% if report.threat_score >= 0.7 %}fa-exclamation-triangle{% elif report.threat_score >= 0.4 %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
-                            This URL is <strong>{{ "Likely Dangerous" if report.threat_score >= 0.7 else "Potentially Risky" if report.threat_score >= 0.4 else "Likely Safe" }}</strong>
-                        </h3>
                         <p class="text-center mb-0">
                             <strong>Checked:</strong> {{ report.url }}
                         </p>
+                        <h3 class="text-center mb-3">
+                            <i class="fas {% if report.threat_score >= 0.7 %}fa-exclamation-triangle{% elif report.threat_score >= 0.4 %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                            This URL is <strong>&nbsp;{{" Likely Dangerous" if report.threat_score >= 0.7 else " Potentially Risky" if report.threat_score >= 0.4 else " Likely Safe" }}</strong>
+                        </h3>
                         <br>
                     </div>
                 </div>
@@ -28,11 +27,13 @@
                     <div class="circular-progress" data-value="{{ report.threat_score * 100 }}">
                         <svg class="progress-circle" width="150" height="150" viewBox="0 0 150 150">
                             <circle class="progress-circle-bg" cx="60" cy="60" r="54" stroke-width="10"></circle>
-                            <circle class="progress-circle-fill {% if report.threat_score >= 0.7 %}danger{% elif report.threat_score >= 0.4 %}warning{% else %}safe{% endif %}" 
+                            <circle class="progress-circle-fill {% if report.threat_score >= 0.7 %}danger{% elif report.threat_score >= 
+                                0.4 %}warning{% else %}safe{% endif %}" 
                                     cx="60" cy="60" r="54" stroke-width="12"></circle>
                         </svg>
                         <div class="progress-text">
-                            <span class="progress-value {% if report.threat_score >= 0.7 %}danger{% elif report.threat_score >= 0.4 %}warning{% else %}safe{% endif %}">
+                            <span class="progress-value {% if report.threat_score >= 0.7 %}danger{% elif report.threat_score >= 0.4 %}
+                                warning{% else %}safe{% endif %}">
                                 {{ "%d"|format(report.threat_score * 100) }}
                             </span>%
                             <div class="progress-label">Risk Score</div>
@@ -90,7 +91,8 @@
                     
                     <div class="mt-3">
                         {% if vt_result.get('positives', 0) > 0 %}
-                            <p><i class="fas fa-times-circle text-danger"></i> Detected by {{ vt_result.get('positives', 0) }} security engines</p>
+                            <p><i class="fas fa-times-circle text-danger"></i> Detected by {{ vt_result.get('positives', 0) }} 
+                                security engines</p>
                         {% else %}
                             <p><i class="fas fa-check-circle text-success"></i> No security engines detected issues</p>
                         {% endif %}
@@ -150,19 +152,19 @@
                     <div class="action-steps mt-4">
                         <h4><i class="fas fa-lightbulb"></i> What To Do Next</h4>
                         <div class="steps">
-                            <div class="step">
+                            <div class="step b2b">
                                 <div class="step-number">1</div>
                                 <div class="step-content">
                                     <strong>Check before clicking</strong> - Hover over links to see the real destination
                                 </div>
                             </div>
-                            <div class="step">
+                            <div class="step b2b">
                                 <div class="step-number">2</div>
                                 <div class="step-content">
                                     <strong>Look for secure connections</strong> - Always check for "https://" and the padlock icon
                                 </div>
                             </div>
-                            <div class="step">
+                            <div class="step b2b">
                                 <div class="step-number">3</div>
                                 <div class="step-content">
                                     <strong>When in doubt, don't proceed</strong> - If something feels off, trust your instincts
@@ -181,297 +183,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    /* Circular Progress Bar */
-
-    .col-md-4{
-        display: flex;
-        justify-content: center; /* Centers the element horizontally */
-    }
-    .circular-progress {
-        position: relative;
-        width: 120px;
-        height: 120px;
-    }
-    
-    .progress-circle {
-        transform: rotate(-90deg);
-    }
-    
-    .progress-circle-bg {
-        fill: none;
-        stroke: #f3f3f3;
-    }
-    
-    .progress-circle-fill.safe {
-        stroke: #28a745; /* Green */
-    }
-
-    .progress-circle-fill.warning {
-        stroke: #ffc107; /* Yellow */
-    }
-
-    .progress-circle-fill.danger {
-        stroke: #dc3545; /* Red */
-    }
-
-    .progress-circle-fill {
-        fill: none;
-        stroke-linecap: round;
-        transition: stroke-dashoffset 1s ease-in-out;
-    }
-    
-    .progress-text {
-        position: absolute;
-        top: 73%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-    }
-    
-    .progress-value {
-        font-size: 24px;
-        font-weight: bold;
-    }
-
-    .progress-value.safe {
-        color: #28a745; /* Green */
-    }
-
-    .progress-value.warning {
-        color: #ffc107; /* Yellow */
-    }
-
-    .progress-value.danger {
-        color: #dc3545; /* Red */
-    }
-    
-    .progress-label {
-        font-size: 14px;
-        color: #666;
-    }
-    
-    /* Safety Indicators */
-    .safety-indicator {
-        padding: 10px 15px;
-        margin: 5px;
-        border-radius: 20px;
-        font-weight: 500;
-    }
-    
-    .safety-indicator.safe {
-        background-color: rgba(40, 167, 69, 0.1);
-        color: #28a745;
-    }
-    
-    .safety-indicator.danger {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
-    
-    /* Findings */
-    .safe-finding, .warning-finding, .danger-finding {
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-    }
-    
-    .safe-finding {
-        background-color: rgba(40, 167, 69, 0.1);
-        border-left: 4px solid #28a745;
-    }
-    
-    .warning-finding {
-        background-color: rgba(255, 193, 7, 0.1);
-        border-left: 4px solid #ffc107;
-    }
-    
-    .danger-finding {
-        background-color: rgba(220, 53, 69, 0.1);
-        border-left: 4px solid #dc3545;
-    }
-    
-    /* Safety Tips */
-    .safety-tip {
-        margin-bottom: 20px;
-    }
-    
-    .tip-header {
-        padding: 10px 15px;
-        border-radius: 8px 8px 0 0;
-        font-weight: bold;
-    }
-    
-    .green-tip {
-        background-color: #28a745;
-        color: white;
-    }
-    
-    .red-tip {
-        background-color: #dc3545;
-        color: white;
-    }
-    
-    .safety-tip ul {
-        list-style: none;
-        padding: 15px;
-        margin: 0;
-        border: 1px solid #eee;
-        border-radius: 0 0 8px 8px;
-    }
-    
-    .safety-tip li {
-        padding: 5px 0;
-    }
-    
-    /* Action Steps */
-    .action-steps {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 8px;
-    }
-    
-    .steps {
-        margin-top: 15px;
-    }
-    
-    .step {
-        display: flex;
-        margin-bottom: 15px;
-        align-items: center;
-    }
-    
-    .step-number {
-        background-color: #4b6cb7;
-        color: white;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-        font-weight: bold;
-    }
-    
-    .step-content {
-        flex: 1;
-    }
-
-    /* Enhanced Animations and Styles */
-    .safety-tip {
-        transition: all 0.3s ease;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    
-    .safety-tip:hover {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        transform: translateY(-3px);
-    }
-    
-    .tip-header {
-        padding: 12px 15px;
-        font-size: 1.1rem;
-        transition: all 0.3s ease;
-    }
-    
-    .pulse-on-hover:hover {
-        animation: pulse 1.5s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-        100% { transform: scale(1); }
-    }
-    
-    .safe-list li, .warning-list li {
-        padding: 8px 15px;
-        margin: 5px 0;
-        border-radius: 5px;
-        transition: all 0.3s ease;
-    }
-    
-    .safe-list li {
-        background-color: rgba(40, 167, 69, 0.05);
-    }
-    
-    .warning-list li {
-        background-color: rgba(220, 53, 69, 0.05);
-    }
-    
-    .safe-list li:hover, .warning-list li:hover {
-        transform: translateX(5px);
-    }
-    
-    .bounce-icon, .shake-icon {
-        transition: all 0.3s ease;
-    }
-    
-    .bounce-icon:hover {
-        animation: bounce 0.5s;
-    }
-    
-    .shake-icon:hover {
-        animation: shake 0.5s;
-    }
-    
-    @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-    }
-    
-    @keyframes shake {
-        0%, 100% { transform: rotate(0deg); }
-        25% { transform: rotate(5deg); }
-        75% { transform: rotate(-5deg); }
-    }
-    
-    .highlight-text {
-        font-weight: 600;
-        color: #28a745;
-        text-decoration: underline;
-        text-decoration-thickness: 2px;
-        text-underline-offset: 2px;
-    }
-    
-    .alert-text {
-        font-weight: 600;
-        color: #dc3545;
-        text-decoration: underline;
-        text-decoration-thickness: 2px;
-        text-underline-offset: 2px;
-    }
-    
-    .fade-in-item {
-        animation: fadeIn 0.5s ease-in-out;
-        animation-fill-mode: both;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Staggered animation delays */
-    .fade-in-item:nth-child(1) { animation-delay: 0.1s; }
-    .fade-in-item:nth-child(2) { animation-delay: 0.2s; }
-    .fade-in-item:nth-child(3) { animation-delay: 0.3s; }
-    .fade-in-item:nth-child(4) { animation-delay: 0.4s; }
-    .fade-in-item:nth-child(5) { animation-delay: 0.5s; }
-    .fade-in-item:nth-child(6) { animation-delay: 0.6s; }
-    .fade-in-item:nth-child(7) { animation-delay: 0.7s; }
-    .fade-in-item:nth-child(8) { animation-delay: 0.8s; }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .circular-progress {
-            margin: 20px auto;
-        }
-    }
-</style>
 
 <script>
     // Animate the circular progress bar

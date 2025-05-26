@@ -2,45 +2,60 @@
 
 {% block content %}
 <main>
-    <section class="hero">
+    <section class="hero section">
         <div class="hero-content">
-            <h1>Check URLs for Threats in Seconds!</h1>
-            <p>Find out whether a URL is malicious before clicking. We’ve got your back!</p>
+            <h1>AI-powered URL Scanner : Check for Phishing, Malware, and Other Online Threats.</h1>
+            <p>Unsure about a link? Don’t click on it just yet!<br>
+            Paste it here and let our AI-powered scanner check for online threats—instantly and securely.</p>
+            <a href="{{ url_for('about') }}" class="learn-more-btn">Learn more</a>
+        </div>
+    </section>
+    <section id="scan-section" class="section">
+        <div class="scan-section-content">
+            <h1>Scan URL</h1>
+            <p>Paste URL for scanning. Let’s find out whether the URL is shady or not.</p>
             <form id="urlForm">
-                <input type="text" id="url" name="url" placeholder="Paste URL here (No judgment if it’s a shady link, we’re here to help!)">
+                <input type="text" id="url" name="url" placeholder="Paste URL here...">
                 <button type="submit" class="btn scan-btn">Scan</button>
             </form>
         </div>
     </section>
 
-    <section id="scanning-module" class="scanning-module" style="display: none;">
+    <section id="scanning-module" class="scanning-module section" style="display: none;">
         <h2>Scanning URL…</h2>
         <p>Checking URL blacklists, cross-referencing threat intelligence, and doing fancy cyber stuff…</p>
         <div class="progress-bar">
             <div class="progress" id="progress" style="width: 0%;"></div>
         </div>
-        <div class="scanning-status">
+        <div class="scanning-status section">
             <p id="status-message">We’re checking if this link is on any known watchlists.</p>
         </div>
     </section>
 
     <section class="how-it-works">
-        <h1>How it works</h1><br>
-        <div class="steps">
-            <div class="step">
-                <i class="fas fa-link step-icon"></i>
-                <h2>Step 1:</h2>
-                <p>Input URL</p>
+        <div class="how-it-works-vertical">
+            <div class="how-it-works-content" style="margin-bottom: 0.5rem;">
+                <span class="learn-more-btn" style="pointer-events:none;cursor:default;">How It Works</span>
             </div>
-            <div class="step">
-                <i class="fas fa-robot step-icon"></i>
-                <h2>Step 2:</h2>
-                <p>AI-based threat analysis</p>
-            </div>
-            <div class="step">
-                <i class="fas fa-file-alt step-icon"></i>
-                <h2>Step 3:</h2>
-                <p>Get a detailed report</p>
+            <h1 class="section-title">3 Easy Steps...</h1>
+            <p>We make online safety simple with fast and secure real-time analysis for every URL posted for a global safety check.</p>
+            <br>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon" style="font-size:2.5rem;color:#ff5e5e;">01</div>
+                    <h2 >Enter URL</h2>
+                    <p> Do you suspect a URL to be fake or shady? Don’t click on the URL just yet. Copy the URL and paste it into our scanner.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon" style="font-size:2.5rem;color:#34a853;">02</div>
+                    <h2>Wait for AI-powered Threat Analysis</h2>
+                    <p>The system will analyze the URL based on its features and provide a safety report.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon" style="font-size:2.5rem;color:#00bcd4;">03</div>
+                    <h2>Get a Detailed Report</h2>
+                    <p>You will receive a detailed report of the URL telling you whether it’s safe to click or not.</p>
+                </div>
             </div>
         </div>
     </section>
